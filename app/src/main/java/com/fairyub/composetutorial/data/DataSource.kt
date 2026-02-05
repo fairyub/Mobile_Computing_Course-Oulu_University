@@ -1,5 +1,8 @@
 package com.fairyub.composetutorial.data
 
+import androidx.compose.ui.platform.LocalContext
+import androidx.room.Room
+
 data class Message(val author: String, val body: String)
 
 object DataSource {

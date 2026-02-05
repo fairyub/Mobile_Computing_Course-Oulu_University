@@ -1,5 +1,6 @@
 package com.fairyub.composetutorial.ui
 
+import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
@@ -28,18 +29,26 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room
+import coil3.compose.rememberAsyncImagePainter
 import com.fairyub.composetutorial.R
 import com.fairyub.composetutorial.data.DataSource
 import com.fairyub.composetutorial.data.Message
+import com.fairyub.composetutorial.data.User
 import com.fairyub.composetutorial.ui.theme.ComposeTutorialTheme
 
 
@@ -66,11 +75,11 @@ fun TopConversationScreenBar(
 }
 
 @Composable
-fun MessageCard(msg: Message) {
+fun MessageCard(msg: Message, user: User?) {
     // Add padding around our message
     Row(modifier = Modifier.padding(all = 8.dp)) {
         Image(
-            painter = painterResource(R.drawable.profile_picture),
+            painter = rememberAsyncImagePainter(user?.imageUri),
             contentDescription = "Contact profile picture",
             modifier = Modifier
                 // Set image size to 40 dp
@@ -93,7 +102,7 @@ fun MessageCard(msg: Message) {
         // We toggle the isExpanded variable when we click on this Column
         Column(modifier = Modifier.clickable { isExpanded = !isExpanded }) {
             Text(
-                text = msg.author,
+                text = user?.name ?: msg.author,
                 color = MaterialTheme.colorScheme.secondary,
                 style = MaterialTheme.typography.titleSmall
             )
@@ -140,13 +149,22 @@ fun ConversationScreen(onSettingButtonClicked: () -> Unit) {
 @Composable
 fun ConversationContent(
     messages: List<Message>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
+    val viewModel = hiltViewModel<UserViewModel>()
+    val users by viewModel.users.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.userFromDB()
+    }
+
+    val user = users.firstOrNull()
+
     LazyColumn(
         modifier = Modifier.padding(top = 100.dp),
     ) {
+
         items(messages) { message ->
-            MessageCard(message)
+            MessageCard(message, user = user)
         }
     }
 }
@@ -162,7 +180,8 @@ fun PreviewMessageCard() {
     ComposeTutorialTheme {
         Surface {
             MessageCard(
-                msg = Message("Lexi", "Take a look at Jetpack Compose, it's great!")
+                msg = Message("Lexi", "Take a look at Jetpack Compose, it's great!"),
+                user = null
             )
         }
     }
