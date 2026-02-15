@@ -1,7 +1,9 @@
 package com.fairyub.composetutorial.ui
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
@@ -29,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,17 +41,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Room
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.rememberAsyncImagePainter
-import com.fairyub.composetutorial.R
 import com.fairyub.composetutorial.data.DataSource
 import com.fairyub.composetutorial.data.Message
 import com.fairyub.composetutorial.data.User
+import com.fairyub.composetutorial.ui.component.createNotification
+import com.fairyub.composetutorial.ui.component.createNotificationChannel
 import com.fairyub.composetutorial.ui.theme.ComposeTutorialTheme
 
 
@@ -132,6 +137,13 @@ fun MessageCard(msg: Message, user: User?) {
 
 @Composable
 fun ConversationScreen(onSettingButtonClicked: () -> Unit) {
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        createNotificationChannel(context)
+        createNotification(context, "Test", "Automatic Notification")
+    }
+
     Scaffold(
         topBar = {
             TopConversationScreenBar(

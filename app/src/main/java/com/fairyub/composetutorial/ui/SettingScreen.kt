@@ -1,5 +1,6 @@
 package com.fairyub.composetutorial.ui
 
+import android.app.Activity
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -42,6 +43,9 @@ import coil3.compose.rememberAsyncImagePainter
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.maxLength
@@ -53,10 +57,14 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.fairyub.composetutorial.data.User
+import com.fairyub.composetutorial.ui.component.GyroscopeSensorForegroundService
+import com.fairyub.composetutorial.ui.component.createNotification
+import com.fairyub.composetutorial.ui.component.createNotificationChannel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,7 +141,28 @@ fun SettingContent(
         File(it).toUri()
     } ?: imageUri
 
+    val requestPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                createNotificationChannel(context)
+                createNotification(context, "Notification enabled", "You will be notified when the device rotates")
+            }
+        }
 
+    fun handleNotificationButton() {
+        val granted = ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (!granted) {
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            return
+        }
+
+        createNotificationChannel(context)
+        createNotification(context, "Notification enabled", "You will be notified when the device rotates")
+    }
 
     Column(
         modifier = Modifier.padding(
@@ -170,6 +199,14 @@ fun SettingContent(
                 saveUser()
             },
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = {handleNotificationButton()}
+        ) {
+            Text(text = "Enable notifications")
+        }
     }
 }
 
