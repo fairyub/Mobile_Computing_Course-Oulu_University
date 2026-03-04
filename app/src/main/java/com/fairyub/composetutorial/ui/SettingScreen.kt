@@ -63,30 +63,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.fairyub.composetutorial.data.User
 import com.fairyub.composetutorial.ui.component.GyroscopeSensorForegroundService
+import com.fairyub.composetutorial.ui.component.ScreenTopBar
 import com.fairyub.composetutorial.ui.component.createNotification
 import com.fairyub.composetutorial.ui.component.createNotificationChannel
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TopSettingScreenBar(
-    onBackButtonClicked: () -> Unit
-) {
-    TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            titleContentColor = MaterialTheme.colorScheme.primary,
-        ),
-        title = { Text("") },
-        navigationIcon = {
-            IconButton(onClick = onBackButtonClicked) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Localized description"
-                )
-            }
-        },
-    )
-}
 
 @Composable
 fun SettingContent(
@@ -214,8 +193,9 @@ fun SettingContent(
 fun SettingScreen(onBackButtonClicked: () -> Unit) {
     Scaffold(
         topBar = {
-            TopSettingScreenBar(
-                onBackButtonClicked = onBackButtonClicked
+            ScreenTopBar(
+                onBackButtonClicked = onBackButtonClicked,
+                title = "Setting"
             )
         }
     ) { paddingValues ->

@@ -3,9 +3,12 @@ package com.fairyub.composetutorial.data
 import androidx.room.Database
 import androidx.room.RoomDatabase
 
-@Database(entities = [User::class], version = 1)
+@Database(entities = [User::class, Conversation::class, Message::class, Attachment::class], version = 1)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun userDao(): UserDao
+    abstract fun conversationDao(): ConversationDao
+    abstract fun messageDao(): MessageDao
+    abstract fun attachmentDao(): AttachmentDao
 
     companion object
 }

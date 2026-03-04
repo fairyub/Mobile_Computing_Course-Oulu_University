@@ -1,17 +1,17 @@
 package com.fairyub.composetutorial.ui
 
-import android.content.Context
-import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -31,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -40,18 +39,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import coil3.compose.rememberAsyncImagePainter
-import com.fairyub.composetutorial.data.DataSource
-import com.fairyub.composetutorial.data.Message
-import com.fairyub.composetutorial.data.User
+import com.fairyub.composetutorial.R
+import com.fairyub.composetutorial.data.ConversationWithLastMessage
 import com.fairyub.composetutorial.ui.component.createNotification
 import com.fairyub.composetutorial.ui.component.createNotificationChannel
 import com.fairyub.composetutorial.ui.theme.ComposeTutorialTheme
@@ -59,7 +54,7 @@ import com.fairyub.composetutorial.ui.theme.ComposeTutorialTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopConversationScreenBar(
+fun TopConversationsScreenBar(
     onSettingButtonClicked: () -> Unit = {},
 ) {
     TopAppBar(
@@ -67,7 +62,7 @@ fun TopConversationScreenBar(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.primary,
         ),
-        title = { Text("") },
+        title = { Text("Conversations") },
         actions = {
             IconButton(onClick = onSettingButtonClicked) {
                 Icon(
@@ -80,11 +75,11 @@ fun TopConversationScreenBar(
 }
 
 @Composable
-fun MessageCard(msg: Message, user: User?) {
+fun ConversationCard(conversation: ConversationWithLastMessage, onConversationClicked: (conversationId: Int) -> Unit, conversationId: Int) {
     // Add padding around our message
-    Row(modifier = Modifier.padding(all = 8.dp)) {
+    Row(modifier = Modifier.padding(all = 8.dp).clickable { onConversationClicked(conversationId) }) {
         Image(
-            painter = rememberAsyncImagePainter(user?.imageUri),
+            painter = rememberAsyncImagePainter(conversation.avatarRes),
             contentDescription = "Contact profile picture",
             modifier = Modifier
                 // Set image size to 40 dp
@@ -105,9 +100,9 @@ fun MessageCard(msg: Message, user: User?) {
         )
 
         // We toggle the isExpanded variable when we click on this Column
-        Column(modifier = Modifier.clickable { isExpanded = !isExpanded }) {
+        Column() {
             Text(
-                text = user?.name ?: msg.author,
+                text = conversation.title ?: "",
                 color = MaterialTheme.colorScheme.secondary,
                 style = MaterialTheme.typography.titleSmall
             )
@@ -120,10 +115,13 @@ fun MessageCard(msg: Message, user: User?) {
                 // surfaceColor color will be changing gradually from primary to surface
                 color = surfaceColor,
                 // animateContentSize will change the Surface size gradually
-                modifier = Modifier.animateContentSize().padding(1.dp)
+                modifier = Modifier
+                    .animateContentSize()
+                    .padding(1.dp)
+                    .clickable { isExpanded = !isExpanded }
             ) {
                 Text(
-                    text = msg.body,
+                    text = conversation.lastMessageText ?: "image",
                     modifier = Modifier.padding(all = 4.dp),
                     style = MaterialTheme.typography.bodyMedium,
                     // If the message is expanded, we display all its content
@@ -131,12 +129,21 @@ fun MessageCard(msg: Message, user: User?) {
                     maxLines = if (isExpanded) Int.MAX_VALUE else 1,
                 )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .height(1.dp)
+                    .fillMaxWidth()
+                    .background(Color.LightGray)
+            )
         }
     }
 }
 
 @Composable
-fun ConversationScreen(onSettingButtonClicked: () -> Unit) {
+fun ConversationsScreen(onSettingButtonClicked: () -> Unit, onConversationClicked: (conversationId: Int) -> Unit) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
@@ -146,37 +153,36 @@ fun ConversationScreen(onSettingButtonClicked: () -> Unit) {
 
     Scaffold(
         topBar = {
-            TopConversationScreenBar(
+            TopConversationsScreenBar(
                 onSettingButtonClicked = onSettingButtonClicked
             )
         }
     ) { paddingValues ->
         ConversationContent(
-            messages = DataSource.conversationSample,
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
+            onConversationClicked = onConversationClicked as (conversationId: Int) -> Unit
         )
     }
 }
 
 @Composable
 fun ConversationContent(
-    messages: List<Message>,
     modifier: Modifier = Modifier,
+    onConversationClicked: (conversationId: Int) -> Unit
 ) {
-    val viewModel = hiltViewModel<UserViewModel>()
-    val users by viewModel.users.collectAsState()
+    val viewModel = hiltViewModel<ConversationViewModel>()
+    val conversations by viewModel.conversations.collectAsState()
     LaunchedEffect(Unit) {
-        viewModel.userFromDB()
+        viewModel.conversationsFromDB()
     }
-
-    val user = users.firstOrNull()
 
     LazyColumn(
         modifier = Modifier.padding(top = 100.dp),
     ) {
 
-        items(messages) { message ->
-            MessageCard(message, user = user)
+        items(conversations) { conversation ->
+            if(conversation != null) ConversationCard(conversation, onConversationClicked, conversation.conversationId)
+
         }
     }
 }
@@ -188,12 +194,20 @@ fun ConversationContent(
     name = "Dark Mode"
 )
 @Composable
-fun PreviewMessageCard() {
+fun PreviewConversationCard() {
     ComposeTutorialTheme {
         Surface {
-            MessageCard(
-                msg = Message("Lexi", "Take a look at Jetpack Compose, it's great!"),
-                user = null
+            ConversationCard(
+                conversation = ConversationWithLastMessage(
+                    conversationId = 1,
+                    title = "Test",
+                    avatarRes = R.drawable.cat,
+                    createdAt = System.currentTimeMillis(),
+                    lastMessageText = "Test",
+                    lastMessageTime = System.currentTimeMillis()
+                ),
+                onConversationClicked = {},
+                conversationId = 1
             )
         }
     }
@@ -203,24 +217,27 @@ fun PreviewMessageCard() {
 @Composable
 fun PreviewConversationContent() {
     ComposeTutorialTheme {
-        ConversationContent(DataSource.conversationSample)
-    }
-}
-
-@Preview
-@Composable
-fun PreviewConversationScreen() {
-    ComposeTutorialTheme {
-        ConversationScreen(
-            onSettingButtonClicked = {}
+        ConversationContent(
+            onConversationClicked = {}
         )
     }
 }
 
 @Preview
 @Composable
-fun PrivewTopConversationScreenBar() {
+fun PreviewConversationsScreen() {
     ComposeTutorialTheme {
-        TopConversationScreenBar()
+        ConversationsScreen(
+            onSettingButtonClicked = {},
+            onConversationClicked = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+fun PrivewTopConversationsScreenBar() {
+    ComposeTutorialTheme {
+        TopConversationsScreenBar()
     }
 }
